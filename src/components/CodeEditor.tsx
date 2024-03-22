@@ -20,8 +20,12 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-function CodeEditor() {
+const BACKEND_URL =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:5001"
+    : process.env.REACT_APP_API_URL;
 
+function CodeEditor() {
   const languages = ["c++", "java", "python"];
 
   const themes = ["monokai", "dracula", "github", "terminal", "xcode"];
@@ -53,25 +57,25 @@ function CodeEditor() {
   const [readOnly, setReadOnly] = useState(false);
   const [executionId, setExecutionId] = useState("");
 
-  // to change code when language changes
   useEffect(() => {
     setCode(changeInitialLanguage(selectLanguage));
   }, [selectLanguage]);
 
-  // to check after .5 seconds the status of code i.e processing or queued and then finally show output
   async function checkStatusAndShowOutput() {
     try {
-      const { data }: any = await axios.get(
-        `https://coding-machine-api.cyclic.app/check-status/${executionId}`
+      const { data } = await axios.get(
+        `${BACKEND_URL}/check-status?submissionId=${executionId}`,
+        { headers: { "X-Api-Key": process.env.REACT_APP_API_KEY! } }
       );
       if (data.data !== "completed") {
         setTimeout(() => {
           checkStatusAndShowOutput();
-          setCheckCodeStatus(false);
-        }, 500);
+          setCheckCodeStatus(true);
+        }, 1200);
       } else {
         const { data } = await axios.get(
-          `https://coding-machine-api.cyclic.app/result/${executionId}`
+          `${BACKEND_URL}/result?submissionId=${executionId}`,
+          { headers: { "X-Api-Key": process.env.REACT_APP_API_KEY! } }
         );
         setOutput(data.data);
         setCheckCodeStatus(false);
@@ -129,34 +133,26 @@ function CodeEditor() {
     setCode(newValue);
   }
 
-  // to submit the code and start checking the status
   async function execute() {
     setSubmitted(true);
     setDisableRunCode(true);
     setReadOnly(true);
     try {
-      // *****IMP we are trying to hit the worker api because heroku sleeps the dyno after 30 mins 
-      // and hence the worker will not be started even thought we have submitted the code 
-      // hence a workaround to start the worker as well ****** 
-      axios
-        .get("https://coding-machine-worker.herokuapp.com/")
-        .then(() => {})
-        .catch(async () => {
-          const { data } = await axios.post(
-            "https://coding-machine-api.cyclic.app/submit",
-            {
-              code,
-              language: selectLanguage,
-            }
-          );
-          if (data.status === "ok") {
-            setExecutionId(data.data);
-            setCheckCodeStatus(true);
-          } else {
-            setDisableRunCode(false);
-            setReadOnly(false);
-          }
-        });
+      const { data } = await axios.post(
+        `${BACKEND_URL}/submit`,
+        {
+          code,
+          language: selectLanguage,
+        },
+        { headers: { "X-Api-Key": process.env.REACT_APP_API_KEY! } }
+      );
+      if (data.status === true) {
+        setExecutionId(data.data);
+        setCheckCodeStatus(true);
+      } else {
+        setDisableRunCode(false);
+        setReadOnly(false);
+      }
     } catch (error) {
       setSubmitted(false);
       setDisableRunCode(false);
@@ -201,10 +197,10 @@ function CodeEditor() {
             <p>
               Time Taken:-
               {new Date(output?.completedAt).valueOf() -
-                new Date(output?.startedAt).valueOf()}
+                new Date(output?.createdAt).valueOf()}
               {" ms "}
             </p>
-            <p> FileName:- {output?.fileName}</p>
+            <p> FileName:- {output?.submissionId}</p>
           </div>
         )}
       </div>
