@@ -22,7 +22,7 @@ export default function NavBar() {
               </div>
               <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex-shrink-0 flex items-center">
-                  <p className=" h-6 w-auto">Coding Machine</p>
+                  <p className=" h-6 w-auto text-white">Coding Machine</p>
                 </div>
                 <div className="hidden sm:block sm:ml-6">
                   <div className="flex space-x-4">
@@ -44,6 +44,11 @@ export default function NavBar() {
                       {"View Docs"}
                     </a>
                   </div>
+                </div>
+                <div className="hidden sm:block mt-1.5 ml-20  flex-shrink-0 flex items-center">
+                  <p className="h-6 w-auto text-white">
+                    We recently migrated our whole backend to AWS(Lambdas, SQS). Blog coming soon!
+                  </p>
                 </div>
               </div>
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
